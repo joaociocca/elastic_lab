@@ -1,5 +1,39 @@
 # elastic_lab
-um repositório pra testes com o Elastic Stack
+Um repositório pra testes com o Elastic Stack.
+
+## Objetivo
+Nem tinha parado pra pensar nisso inicialmente, mas é uma boa, né? Objetivos nos ajudam a guiar os trabalhos. A ideia daqui realmente começou só como um "vamos ver o que eu consigo/dá pra fazer", mas melhorias sempre são bem vindas, e acho que objetivo é uma ótima melhoria. Então, eu vou considerar como meu objetivo nesse projeto explorar tudo o que eu conseguir do Elastic Stack, usando meu notebook com 16GB de RAM e algum espaço em disco que sobrou dos jogos ;)
+
+Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e limitar algumas funcionalidades:
+* Elasticsearch
+  - ~Instalando no docker~ (feito)
+    - ~Cluster~ (feito)
+  - Segurança
+  - Cross-cluster
+  - Gerenciamento de índices e ciclo de vida
+  - Elasticsearch SQL
+* Kibana
+  - ~Instalando no docker~ (feito)
+  - Segurança
+  - Discover
+  - Visualize
+  - Dashboard
+  - Canvas
+  - Maps
+  - Metrics
+  - Logs
+  - Uptime
+  - SIEM
+* Beats
+  - Heartbeat
+  - Metricbeat
+  - Packetbeat
+  - Winlogbeat
+* Logstash
+  - Segurança
+  - Ingestão de beats
+  - Transformações
+  - Múltiplos Pipelines
 
 ## Passo a passo
 #### Elasticsearch no docker
@@ -51,6 +85,7 @@ E foi assim que chegamos no `kibana.yml` que está no repositório, com a config
 Uma coisa que faltou foi ativar a monitoração dos nós do Elasticsearch! Isso pode ser feito incluindo a linha `- xpack.monitoring.collection.enabled=true` no conjunto `enviroment` de cada um dos containers! Já vai ser o próximo commit daqui.
 
 ### Próximos passos
-- Logstash
-- Monitoração de endpoint com sysmon + winlogbeat
-- Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon
+(não está em ordem, preferência ou prioridade)
+  - Logstash
+  - Monitoração de endpoint com sysmon + winlogbeat
+  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon
