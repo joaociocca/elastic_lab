@@ -1,7 +1,9 @@
 # elastic_lab
+
 Um repositório pra testes com o Elastic Stack.
 
 ## Objetivo
+
 Nem tinha parado pra pensar nisso inicialmente, mas é uma boa, né? Objetivos nos ajudam a guiar os trabalhos. A ideia daqui realmente começou só como um "vamos ver o que eu consigo/dá pra fazer", mas melhorias sempre são bem vindas, e acho que objetivo é uma ótima melhoria. Então, eu vou considerar como meu objetivo nesse projeto explorar tudo o que eu conseguir do Elastic Stack, usando meu notebook com 16GB de RAM e algum espaço em disco que sobrou dos jogos ;)
 
 Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e limitar algumas funcionalidades:
@@ -36,7 +38,9 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
   - Múltiplos Pipelines
 
 ## Passo a passo
+
 #### Elasticsearch no docker
+
 Já mexi um pouco com o Elastic Stack, já li um pouco a respeito de docker... mas nunca usei um pra ter o outro. A ideia desse projetinho começou assim: vamos ver como é subir 3 nós do Elasticsearch pelo Docker. Primeiro passo: [documentação](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html). 
 
 Parece fácil, mas tem coisa fora de ordem aí. 
@@ -54,7 +58,9 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 ```
 
 Tudo pronto com o Elastisearch, próximo passo é o Kibana!
+
 #### Kibana também não foi de primeira...
+
 Tá pensando em só seguir a [documentação](https://www.elastic.co/guide/en/kibana/current/docker.html) de novo, né? Não vai dar certo DE NOVO, porque o docker-compose da própria documentação do Elasticsearch já joga ele numa rede diferente da `default`, chamada `elastic`! Então, se você for tentar usar um `sudo docker run --link es01:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.7.0
 `, você vai receber...
 ```
@@ -83,6 +89,17 @@ Pelo que eu li até aqui, também dá pra fazer isso com variável de ambiente n
 E foi assim que chegamos no `kibana.yml` que está no repositório, com a configuração de `server.host` sem utilização de endereço "loopback" e definindo o `elasticsearch.hosts` para os três containers `["http://es01:9200","http://es01:9200","http://es01:9200"]`.
 
 Uma coisa que faltou foi ativar a monitoração dos nós do Elasticsearch! Isso pode ser feito incluindo a linha `- xpack.monitoring.collection.enabled=true` no conjunto `enviroment` de cada um dos containers! Já vai ser o próximo commit daqui.
+
+#### *Segurança* (em andamento)
+
+[configurar TLS no Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-tls-docker.html)
+
+[configurar senha no Elasticsearch](https://discuss.elastic.co/t/how-to-set-passwords-for-built-in-users-in-batch-mode/119655/6)
+
+> Configurar senha, usar `docker-compose run <máquina> /bin/bash`
+>
+> Testar na mesma VM: `curl --insecure --user elastic:senha https://127.0.0.1:9200/_cluster/health/?pretty`
+
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
