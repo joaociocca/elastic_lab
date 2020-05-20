@@ -8,13 +8,13 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
 * Elasticsearch
   - ~Instalando no docker~ (feito)
     - ~Cluster~ (feito)
-  - Segurança
+  - *Segurança* (TLS feito, senhas eu não tenho certeza?)
   - Cross-cluster
   - Gerenciamento de índices e ciclo de vida
   - Elasticsearch SQL
 * Kibana
   - ~Instalando no docker~ (feito)
-  - Segurança
+  - *Segurança* (fazendo e me fudendo)
   - Discover
   - Visualize
   - Dashboard
