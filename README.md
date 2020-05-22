@@ -121,3 +121,9 @@ Derrubando tudo e subindo de novo, consegui fazer o login - e aí apareceu exata
 Mas eu até que gosto do caminho que eu peguei. Além de ter aprendido um tanto, ainda acho que meu `docker-compose.yml` ficou mais bonito jogando aquele mundaréu de configuração igual que as instâncias do Elasticsearch tem pro `templates.yml`.
 
 Além disso, passar as configurações do `kibana.yml` pras variáveis de ambiente no `docker-compose.yml` levou embora o `kibana.yml`, e considerando que apenas 6 são estáticas e o resto todo lida com variáveis, não vejo porque voltar.
+
+### Próximos passos
+(não está em ordem, preferência ou prioridade)
+  - Logstash
+  - Monitoração de endpoint com sysmon
+  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon

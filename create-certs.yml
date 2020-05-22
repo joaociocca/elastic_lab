@@ -1,0 +1,29 @@
+version: '2.2'
+
+# Executar uma vez: docker-compose -f create-certs.yml run --rm create_certs
+
+services:
+  create_certs:
+    container_name: create_certs
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    command: >
+      bash -c '
+        if [[ ! -f /certs/bundle.zip ]]; then
+          bin/elasticsearch-certutil cert --silent --pem --in config/certificates/instances.yml -out /certs/bundle.zip;
+          unzip /certs/bundle.zip -d /certs; 
+        fi;
+        chown -R 1000:0 /certs
+      '
+    user: "0"
+    # networks:
+    #   - es_elastic
+    working_dir: /usr/share/elasticsearch
+    volumes: ['certs:/certs:z', '.:/usr/share/elasticsearch/config/certificates']
+
+volumes: {"certs"}
+
+# networks:
+#   elastic:
+#     driver: bridge
+#     external: true
+# testar com: docker run --rm -v es_certs:/certs --network=es_elastic docker.elastic.co/elasticsearch/elasticsearch:7.7.0 curl --cacert /certs/ca/ca.crt -u elastic:ABIOLTvVVFmwB4VG7IaE16Ex2cUaomWPrXZgmmugsFJYHOtL6GolpEcDPOMRVbuP https://es01:9200
