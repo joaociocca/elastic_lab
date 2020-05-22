@@ -9,14 +9,14 @@ Nem tinha parado pra pensar nisso inicialmente, mas é uma boa, né? Objetivos n
 Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e limitar algumas funcionalidades:
 * Elasticsearch
   - ~Instalando no docker~ (feito)
-    - ~Cluster~ (feito)
-  - *Segurança* (TLS feito, senhas eu não tenho certeza?)
+    - ~~Cluster~~ (feito)
+  - ~~Segurança~~ (feito)
   - Cross-cluster
   - Gerenciamento de índices e ciclo de vida
   - Elasticsearch SQL
 * Kibana
-  - ~Instalando no docker~ (feito)
-  - *Segurança* (fazendo e me fudendo)
+  - ~~Instalando no docker~~ (feito)
+  - ~~Segurança~~ (feito)
   - Discover
   - Visualize
   - Dashboard
@@ -90,19 +90,34 @@ E foi assim que chegamos no `kibana.yml` que está no repositório, com a config
 
 Uma coisa que faltou foi ativar a monitoração dos nós do Elasticsearch! Isso pode ser feito incluindo a linha `- xpack.monitoring.collection.enabled=true` no conjunto `enviroment` de cada um dos containers! Já vai ser o próximo commit daqui.
 
-#### *Segurança* (em andamento)
+### Segurança achou que era PM, me deu uma surra...
 
-[configurar TLS no Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-tls-docker.html)
+Esse daqui além de dar me espancar dando muito trabalho fez eu me sentir muito burro. Passeei por uma montanha de documentação e páginas, entre elas (mas não apenas):
 
-[configurar senha no Elasticsearch](https://discuss.elastic.co/t/how-to-set-passwords-for-built-in-users-in-batch-mode/119655/6)
+* [configurar TLS no Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-tls-docker.html)
+* [configurar senha no Elasticsearch](https://discuss.elastic.co/t/how-to-set-passwords-for-built-in-users-in-batch-mode/119655/6)
+* [configurar TLS no Kibana](https://www.elastic.co/guide/en/kibana/current/elasticsearch-mutual-tls.html)
+* [configurando segurança no Kibana](https://www.elastic.co/guide/en/kibana/current/using-kibana-with-security.html)
 
-> Configurar senha, usar `docker-compose run <máquina> /bin/bash`
->
-> Testar na mesma VM: `curl --insecure --user elastic:senha https://127.0.0.1:9200/_cluster/health/?pretty`
+Até que eu finalmente esbarrei, totalmente sem querer, em "[começando com docker](https://www.elastic.co/guide/en/elastic-stack-get-started/current/get-started-docker.html)". E eu senti que todo meu Google-fu deixou de existir e eu não manjo nada de pesquisas mais. Tá certo que eu tava na cara do gol, indo manualmente... mas aqui tá tudo PRONTO. TU-DO.
 
+Mesmo assim, no meio do caminho teve um bug fantasma:
 
-### Próximos passos
-(não está em ordem, preferência ou prioridade)
-  - Logstash
-  - Monitoração de endpoint com sysmon + winlogbeat
-  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon
+```
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:01:59Z","tags":["listening","info"],"pid":6,"message":"Server running at https://0.0.0.0:5601"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:00Z","tags":["info","http","server","Kibana"],"pid":6,"message":"http server running at https://0.0.0.0:5601"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:08Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Error: [parse_exception] no body content for monitoring bulk request\n    at respond (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:349:15)\n    at checkRespForFailure (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:306:7)\n    at HttpConnector.<anonymous> (/usr/share/kibana/node_modules/elasticsearch/src/lib/connectors/http.js:173:7)\n    at IncomingMessage.wrapper (/usr/share/kibana/node_modules/elasticsearch/node_modules/lodash/lodash.js:4929:19)\n    at IncomingMessage.emit (events.js:203:15)\n    at endReadableNT (_stream_readable.js:1145:12)\n    at process._tickCallback (internal/process/next_tick.js:63:19)"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:08Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Unable to bulk upload the stats payload to the local cluster"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:17Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Error: [parse_exception] no body content for monitoring bulk request\n    at respond (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:349:15)\n    at checkRespForFailure (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:306:7)\n    at HttpConnector.<anonymous> (/usr/share/kibana/node_modules/elasticsearch/src/lib/connectors/http.js:173:7)\n    at IncomingMessage.wrapper (/usr/share/kibana/node_modules/elasticsearch/node_modules/lodash/lodash.js:4929:19)\n    at IncomingMessage.emit (events.js:203:15)\n    at endReadableNT (_stream_readable.js:1145:12)\n    at process._tickCallback (internal/process/next_tick.js:63:19)"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:17Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Unable to bulk upload the stats payload to the local cluster"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:27Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Error: [parse_exception] no body content for monitoring bulk request\n    at respond (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:349:15)\n    at checkRespForFailure (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:306:7)\n    at HttpConnector.<anonymous> (/usr/share/kibana/node_modules/elasticsearch/src/lib/connectors/http.js:173:7)\n    at IncomingMessage.wrapper (/usr/share/kibana/node_modules/elasticsearch/node_modules/lodash/lodash.js:4929:19)\n    at IncomingMessage.emit (events.js:203:15)\n    at endReadableNT (_stream_readable.js:1145:12)\n    at process._tickCallback (internal/process/next_tick.js:63:19)"}
+kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:27Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Unable to bulk upload the stats payload to the local cluster"}
+```
+
+O principal que eu achei a respeito disso foi [um issue no próprio github da Elastic, mas relativo ao Kibana 6.4GA](https://github.com/elastic/kibana/issues/22842), e que foi fechado sem conclusão por não conseguirem reproduzir. Apareceu, pra mim, primeiro quando eu apenas subi o Kibana... mas ficou repetindo eternamente quando eu tentei um login inválido. Nisso, ao invés do Kibana só dar a mensagem de erro, ele resolveu me apresentar um 404 de uma linha só e não me deixar tentar logar novamente.
+
+Derrubando tudo e subindo de novo, consegui fazer o login - e aí apareceu exatamente essa quantidade que vocês veem aí acima, ao invés de um loop infinito de bugs. Menos mal, seja o que tiver sido, já era.
+
+Mas eu até que gosto do caminho que eu peguei. Além de ter aprendido um tanto, ainda acho que meu `docker-compose.yml` ficou mais bonito jogando aquele mundaréu de configuração igual que as instâncias do Elasticsearch tem pro `templates.yml`.
+
+Além disso, passar as configurações do `kibana.yml` pras variáveis de ambiente no `docker-compose.yml` levou embora o `kibana.yml`, e considerando que apenas 6 são estáticas e o resto todo lida com variáveis, não vejo porque voltar.
