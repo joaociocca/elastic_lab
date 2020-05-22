@@ -126,4 +126,7 @@ Além disso, passar as configurações do `kibana.yml` pras variáveis de ambien
 (não está em ordem, preferência ou prioridade)
   - Logstash
   - Monitoração de endpoint com sysmon
-  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon
+  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon, ou um novo..?
+  - Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim
+  - Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
+    * apenas Linux e Windows? Será possível incluir MacOS?
