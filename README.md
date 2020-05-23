@@ -28,6 +28,7 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
   - SIEM
 * Beats
   - Instalando no host (e em outras VMs?)
+  - Filebeat
   - Heartbeat
   - Metricbeat
   - Packetbeat
@@ -198,10 +199,11 @@ ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
+  - Monitoração do Kibana e dos Elasticsearch com Filebeat
   - Logstash
   - Monitoração de endpoint com sysmon
   - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon, ou um novo..?
-  - Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim
+  - ~~Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim~~
   - Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
     * apenas Linux e Windows? Será possível incluir MacOS?
   - Transformar esse readme em uma wiki?
