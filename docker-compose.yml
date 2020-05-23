@@ -116,6 +116,8 @@ services:
       SERVER_HOST: "0.0.0.0"
       ELASTICSEARCH_ULR: https://es1-01:9200
       ELASTICSEARCH_HOSTS: https://es1-01:9200
+      # ELASTICSEARCH_USERNAME: "elastic"
+      # ELASTICSEARCH_PASSWORD: $ELASTIC_PASSWORD
       ELASTICSEARCH_USERNAME: "kibana"
       ELASTICSEARCH_PASSWORD: $KIBANA_PASSWORD
       TELEMETRY_ENABLED: "false"
@@ -131,7 +133,7 @@ services:
     ports:
       - 5601:5601
     networks:
-      - elastic1
+      - default
     depends_on:
       - es1-01
       - es1-02
@@ -159,7 +161,5 @@ volumes:
     driver: local
 
 networks:
-  elastic1:
-    driver: bridge
-  elastic2:
+  default:
     driver: bridge

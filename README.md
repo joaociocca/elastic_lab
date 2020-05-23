@@ -10,13 +10,13 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
 * Elasticsearch
   - ~Instalando no docker~ (feito)
     - ~~Cluster~~ (feito)
-  - ~~Segurança~~ (feito)
-  - Cross-cluster
+  - *Segurança* (feito, revisão - persistência da keystore)
+  - *Cross-cluster* (em andamento)
   - Gerenciamento de índices e ciclo de vida
   - Elasticsearch SQL
 * Kibana
   - ~~Instalando no docker~~ (feito)
-  - ~~Segurança~~ (feito)
+  - *Segurança* (feito, revisão - persistência da keystore)
   - Discover
   - Visualize
   - Dashboard
@@ -49,7 +49,7 @@ Subi uma VMzinha com o Ubuntu Server 20.04 e durante as telas de instalação j�
 ```
 es02    | [1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
 ```
-Volta na documentação, mas [desce um pouco mais](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_set_vm_max_map_count_to_at_least_262144): `sysctl -w vm.max_map_count=262144` pra resolver. Agora sim, só subir, que maravilha! Deu até pra testar de outra máquina na rede! `curl -X GET "<ip_da_VM_ubuntu>:9200/_cat/nodes?v&pretty"` e temos:
+Volta na documentação, mas [desce um pouco mais](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_set_vm_max_map_count_to_at_least_262144): `sysctl -w vm.max_map_count=262144` pra resolver. Além de incluir `vm.max_map_count=262144` no `/etc/sysctl.conf` Agora sim, só subir, que maravilha! Deu até pra testar de outra máquina na rede! `curl -X GET "<ip_da_VM_ubuntu>:9200/_cat/nodes?v&pretty"` e temos:
 ```
 ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
 172.19.0.3           27          93  10    1.14    0.69     0.54 dilmrt    -      es02
@@ -130,9 +130,36 @@ Antes de começar a próxima fase eu pensei - vamos testar isso. Será que tá t
 
 Alterei os nomes das 3 instâncias originais do Elasticsearch de `es0x` para `es1-0x` e adicionei três novas `es2-0x`. Agora sim, podemos rodar o `create-certs.yml`, certo? Tentei. Nada. Quando vou ver... os volumes anteriores ainda estavam lá! Mas o `docker system prune` não deveria ter removido tudo? EU TINHA ESQUECIDO DE PARAR O QUE ESTAVA RODANDO. Palmas para mim.
 
-`docker-compose down`, `system prune` e `volume prune`. Tudo zerado. Beleza, vamos tentar de novo... não, pera. Vamos arrumar já o `docker-compose.yml` pra acertar tudo. Clusters ES1-xx e ES2-xx, com as chaves corretas nas configurações do xpack e nomes corretos dos volumes para dados persistentes (data1-xx e data2-xx).
+`docker-compose down`, `system prune` e `volume prune`. Tudo zerado. Beleza, vamos tentar de novo... não, pera. Vamos arrumar já o `docker-compose.yml` pra acertar tudo. Clusters ES1-xx e ES2-xx, com as chaves corretas nas configurações do xpack e nomes corretos dos volumes para dados persistentes (data1-xx e data2-xx). Não pode esquecer também de mudar os nomes dos clusters, na propriedade `cluster.name` dos arquivos de template! "Mas não é um arquivo só, `templates.yml`?" Era. Tem muita coisa que modifica pra dois clusters diferentes, então agora temos os arquivos `elastic_cluster01.yml` e `elastic_cluster02.yml` com os templates das definições comuns às 3 máquinas de cada cluster.
 
-Ah sim, e como eles estão no mesmo lugar, precisamos de redes diferentes, e que os esX-01 sejam expostos em portas diferentes... ES1-01 ficou na porta 9200 como já estava, ES2-01 foi pra porta 9300.
+Ah sim, e como eles estão no mesmo lugar, precisamos de redes diferentes, e que os esX-01 sejam expostos em portas diferentes... ES1-01 ficou na porta 9200 como já estava, ES2-01 foi pra porta 9201. Mas isso apenas externamente, pois já que no Docker eles estarão em redes diferentes, elastic1 e elastic2, a porta nativa 9200 do container pode ser mantida. Mais um ponto: senhas diferentes para ambos, então temos uma nova variável no `.env` chamada `ELASTIC_PASSWORD2`, devidamente referenciada aonde precisa ser (no `elastic_cluster02.yml`).
+
+Tudo pronto... dá pra subir os clusters. Vamos segurar o Kibana, porque ainda tem que configurar as senhas. E nisso, vai entrar a persistência da keystore, o que é OUTRA coisa. Então, foco: clusters, SUBAM!
+
+Tudo rodando, maravilha. Hora de ver como funciona o cross cluster e... parece que já comecei errado. Não dá pra fazer containers em redes diferentes se falarem. Então, bora voltar todo mundo pra mesma rede.
+
+Todo mundo verdinho. Agora bora ver essa configuração de "[External Cluster](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cross-cluster-search.html)". Bem simples, foi só usar o exemplo de Remote Cluster Setup e apontar o `cluster_one` do exemplo pro es1-01 e o `cluster_two ` para o es2-01, ambos na porta 9300.
+
+Parece ter funcionado, mas eu sei zero de fazer as queries do Elasticsearch por curl, então vou precisar do Kibana. Pensei que conseguiria subir ele desativando as opções de segurança/senha... e ele sobe, mesmo. Mas ainda pede login, e não aceita o usuário `elastic`. Vamos ter que ir atrás da persistência da keystore, mesmo...
+
+### Persistência da keystore
+
+Eu já tentei isso algumas vezes, mas por algum raio de motivo, o docker teima em achar que o arquivo elasticsearch.keystore é um diretório ao invés de um arquivo!
+
+A [grande documentação do Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-keystore-bind-mount) é essa: 
+
+  #### Mounting an Elasticsearch keystoreedit
+
+  By default, Elasticsearch will auto-generate a keystore file for secure settings. This file is obfuscated but not encrypted. If you want to encrypt your secure settings with a password, you must use the elasticsearch-keystore utility to create a password-protected keystore and bind-mount it to the container as /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the Docker container with the password at startup, set the Docker environment value KEYSTORE_PASSWORD to the value of your password. For example, a docker run command might have the following options:
+
+  -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
+  -E KEYSTORE_PASSWORD=mypassword
+
+Bastante coisa, né? Então o que eu entendi é: temos que usar o próprio container pra criar a keystore e copiá-la para fora, pra depois, então, montar o volume de volta com a keystore persistente. Certo? Bom, criar a keystore, ok. Gerar as senhas dos usuários padrão... não funciona porque o TLS tá ligado?
+
+E eu descobri que o que eu tava fazendo de errado era, pra criar keystore e senhas (pelo `bin/elasticsearch-setup-passwords auto`) era executar um `docker-compose run es1-01 /bin/bash` ao invés de `docker exec -it <id> /bin/bash`, o que acabava fazendo eu ir parar numa OUTRA máquiona e não conseguir acessar o keystore "real" do cluster! Usando o comando correto, depois foi só executar (dentro do container) executar o `elasticsearch-setup-passwords auto` pra ter senhas dos usuários "embutidos". Daí, com um `docker cp <id>:/usr/share/elasticsearch/config/elasticsearch.keystore .` a gente faz uma cópia da keustopre para persistência fora do container - mapeando de volta como `./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore`
+
+ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos.
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
