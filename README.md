@@ -8,15 +8,15 @@ Nem tinha parado pra pensar nisso inicialmente, mas é uma boa, né? Objetivos n
 
 Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e limitar algumas funcionalidades:
 * Elasticsearch
-  - ~Instalando no docker~ (feito)
-    - ~~Cluster~~ (feito)
-  - *Segurança* (feito, revisão - persistência da keystore)
-  - *Cross-cluster* (em andamento)
+  - ~~Instalando no docker~~ (feito)
+  - ~~Cluster~~ (feito)
+  - ~~Segurança~~ (feito, com persistência da keystore)
+  - ~~Cross-cluster~~ (feito)
   - Gerenciamento de índices e ciclo de vida
   - Elasticsearch SQL
 * Kibana
   - ~~Instalando no docker~~ (feito)
-  - *Segurança* (feito, revisão - persistência da keystore)
+  - ~~Segurança~~ (feito, com persistência da keystore)
   - Discover
   - Visualize
   - Dashboard
@@ -27,11 +27,13 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
   - Uptime
   - SIEM
 * Beats
+  - Instalando no host (e em outras VMs?)
   - Heartbeat
   - Metricbeat
   - Packetbeat
   - Winlogbeat
 * Logstash
+  - Instalando no docker
   - Segurança
   - Ingestão de beats
   - Transformações
@@ -148,18 +150,27 @@ Eu já tentei isso algumas vezes, mas por algum raio de motivo, o docker teima e
 
 A [grande documentação do Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-keystore-bind-mount) é essa: 
 
-  #### Mounting an Elasticsearch keystoreedit
+    #### Mounting an Elasticsearch keystoreedit
 
-  By default, Elasticsearch will auto-generate a keystore file for secure settings. This file is obfuscated but not encrypted. If you want to encrypt your secure settings with a password, you must use the elasticsearch-keystore utility to create a password-protected keystore and bind-mount it to the container as /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the Docker container with the password at startup, set the Docker environment value KEYSTORE_PASSWORD to the value of your password. For example, a docker run command might have the following options:
+    By default, Elasticsearch will auto-generate a keystore file for secure settings.
+    This file is obfuscated but not encrypted. If you want to encrypt your secure 
+    settings with a password, you must use the elasticsearch-keystore utility to create
+    a password-protected keystore and bind-mount it to the container as 
+    /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the 
+    Docker container with the password at startup, set the Docker environment value 
+    KEYSTORE_PASSWORD to the value of your password. For example, a docker run command
+    might have the following options:
 
-  -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
-  -E KEYSTORE_PASSWORD=mypassword
+    -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
+    -E KEYSTORE_PASSWORD=mypassword
 
-Bastante coisa, né? Então o que eu entendi é: temos que usar o próprio container pra criar a keystore e copiá-la para fora, pra depois, então, montar o volume de volta com a keystore persistente. Certo? Bom, criar a keystore, ok. Gerar as senhas dos usuários padrão... não funciona porque o TLS tá ligado?
+Bastante coisa, né? Só que não. Então, o que eu entendi é: temos que usar o próprio container pra criar a keystore e copiá-la para fora pra, só depois então, montar o volume de volta com a keystore persistente. Certo? Bom, criar a keystore, ok. Gerar as senhas dos usuários padrão... não funciona porque o TLS tá ligado?
 
-E eu descobri que o que eu tava fazendo de errado era, pra criar keystore e senhas (pelo `bin/elasticsearch-setup-passwords auto`) era executar um `docker-compose run es1-01 /bin/bash` ao invés de `docker exec -it <id> /bin/bash`, o que acabava fazendo eu ir parar numa OUTRA máquiona e não conseguir acessar o keystore "real" do cluster! Usando o comando correto, depois foi só executar (dentro do container) executar o `elasticsearch-setup-passwords auto` pra ter senhas dos usuários "embutidos". Daí, com um `docker cp <id>:/usr/share/elasticsearch/config/elasticsearch.keystore .` a gente faz uma cópia da keustopre para persistência fora do container - mapeando de volta como `./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore`
+Descobri que o que eu tava fazendo de errado! Pra criar keystore e senhas (pelo `bin/elasticsearch-setup-passwords auto`) eu tentava executar um `docker-compose run es1-01 /bin/bash` ao invés de `docker exec -it <id> /bin/bash`, o que acabava fazendo eu ir parar numa OUTRA máquina e não conseguir acessar o keystore "real" do cluster!
 
-ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos.
+Usando o comando correto (sem reverter as configurações do TLS!), depois foi só executar (dentro do container) o `elasticsearch-setup-passwords auto` pra ter senhas dos usuários "embutidos". Daí, com um `docker cp <id>:/usr/share/elasticsearch/config/elasticsearch.keystore .` a gente faz uma cópia da keystore para persistência fora do container, mapeando de volta como `./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore` - e aqui tem outra coisa, a documentação do Docker por algum raio de motivo fala o tempo todo em "usar o path absoluto", mas comigo só funcionou quando o path local foi relativo!
+
+ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos. Agora tá funcionando =D Próximo passo... matar tudo de novo e revisar todos os passos até aqui!
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
@@ -169,3 +180,4 @@ ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos
   - Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim
   - Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
     * apenas Linux e Windows? Será possível incluir MacOS?
+  - Transformar esse readme em uma wiki?
