@@ -122,6 +122,18 @@ Mas eu até que gosto do caminho que eu peguei. Além de ter aprendido um tanto,
 
 Além disso, passar as configurações do `kibana.yml` pras variáveis de ambiente no `docker-compose.yml` levou embora o `kibana.yml`, e considerando que apenas 6 são estáticas e o resto todo lida com variáveis, não vejo porque voltar.
 
+### Cross-cluster
+
+Antes de começar a próxima fase eu pensei - vamos testar isso. Será que tá tudo certo? Dà pra considerar um passo-a-passo? Então eu dei um `system prune -a -f` no meu docker pra limpar tudo, e depois um `docker-compose up es01 es02 es03` e... nada funcionava. Óbvio, eu estava com a configuração já pronta pra ter os certificados, sem ter os certificados! E onde eu coloque isso na documentação? Nop, em lugar nenhum.
+
+`docker-compose -f create-certs.yml run --rm create_certs` é o que precisa ser executado para criar os certificados para a comunicação TLS. Mas já que eu tenho que recriar, e o próximo passo é aprender como funciona cross-cluster, vamos mudar o `instances.yml`?
+
+Alterei os nomes das 3 instâncias originais do Elasticsearch de `es0x` para `es1-0x` e adicionei três novas `es2-0x`. Agora sim, podemos rodar o `create-certs.yml`, certo? Tentei. Nada. Quando vou ver... os volumes anteriores ainda estavam lá! Mas o `docker system prune` não deveria ter removido tudo? EU TINHA ESQUECIDO DE PARAR O QUE ESTAVA RODANDO. Palmas para mim.
+
+`docker-compose down`, `system prune` e `volume prune`. Tudo zerado. Beleza, vamos tentar de novo... não, pera. Vamos arrumar já o `docker-compose.yml` pra acertar tudo. Clusters ES1-xx e ES2-xx, com as chaves corretas nas configurações do xpack e nomes corretos dos volumes para dados persistentes (data1-xx e data2-xx).
+
+Ah sim, e como eles estão no mesmo lugar, precisamos de redes diferentes, e que os esX-01 sejam expostos em portas diferentes... ES1-01 ficou na porta 9200 como já estava, ES2-01 foi pra porta 9300.
+
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
   - Logstash

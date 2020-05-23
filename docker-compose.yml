@@ -1,17 +1,17 @@
 version: '2.2'
 services:
 
-  es01:
-    container_name: es01
+  es1-01:
+    container_name: es1-01
     environment:
-      - node.name=es01
-      - discovery.seed_hosts=es02,es03
-      - xpack.security.http.ssl.key=$CERTS_DIR/es01/es01.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es01/es01.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es01/es01.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es01/es01.key
+      - node.name=es1-01
+      - discovery.seed_hosts=es1-02,es1-03
+      - xpack.security.http.ssl.key=$CERTS_DIR/es1-01/es1-01.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es1-01/es1-01.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es1-01/es1-01.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es1-01/es1-01.key
     volumes:
-      - data01:/usr/share/elasticsearch/data
+      - data1-01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     healthcheck:
@@ -20,47 +20,102 @@ services:
       timeout: 10s
       retries: 5
     extends:
-        file: templates.yml
+        file: elastic_cluster01.yml
         service: elasticsearch
-  es02:
-    container_name: es02
+  es1-02:
+    container_name: es1-02
     environment:
-      - node.name=es02
-      - discovery.seed_hosts=es01,es03
-      - xpack.security.http.ssl.key=$CERTS_DIR/es02/es02.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es02/es02.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es02/es02.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es02/es02.key
+      - node.name=es1-02
+      - discovery.seed_hosts=es1-01,es1-03
+      - xpack.security.http.ssl.key=$CERTS_DIR/es1-02/es1-02.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es1-02/es1-02.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es1-02/es1-02.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es1-02/es1-02.key
     volumes:
-      - data02:/usr/share/elasticsearch/data
+      - data1-02:/usr/share/elasticsearch/data
     depends_on:
-      - es01
+      - es1-01
     extends:
-        file: templates.yml
+        file: elastic_cluster01.yml
         service: elasticsearch
-  es03:
-    container_name: es03
+  es1-03:
+    container_name: es1-03
     environment:
-      - node.name=es03
-      - discovery.seed_hosts=es01,es02
-      - xpack.security.http.ssl.key=$CERTS_DIR/es03/es03.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es03/es03.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es03/es03.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es03/es03.key
+      - node.name=es1-03
+      - discovery.seed_hosts=es1-01,es1-02
+      - xpack.security.http.ssl.key=$CERTS_DIR/es1-03/es1-03.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es1-03/es1-03.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es1-03/es1-03.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es1-03/es1-03.key
     volumes:
-      - data03:/usr/share/elasticsearch/data
+      - data1-03:/usr/share/elasticsearch/data
     depends_on:
-      - es01
+      - es1-01
     extends:
-        file: templates.yml
+        file: elastic_cluster01.yml
+        service: elasticsearch
+
+  es2-01:
+    container_name: es2-01
+    environment:
+      - node.name=es2-01
+      - discovery.seed_hosts=es2-02,es2-03
+      - xpack.security.http.ssl.key=$CERTS_DIR/es2-01/es2-01.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-01/es2-01.key
+      # - host.port=9201
+    volumes:
+      - data2-01:/usr/share/elasticsearch/data
+    ports:
+      - 9201:9200
+    healthcheck:
+      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    extends:
+        file: elastic_cluster02.yml
+        service: elasticsearch
+  es2-02:
+    container_name: es2-02
+    environment:
+      - node.name=es2-02
+      - discovery.seed_hosts=es2-01,es2-03
+      - xpack.security.http.ssl.key=$CERTS_DIR/es2-02/es2-02.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-02/es2-02.key
+    volumes:
+      - data2-02:/usr/share/elasticsearch/data
+    depends_on:
+      - es2-01
+    extends:
+        file: elastic_cluster02.yml
+        service: elasticsearch
+  es2-03:
+    container_name: es2-03
+    environment:
+      - node.name=es2-03
+      - discovery.seed_hosts=es2-01,es2-02
+      - xpack.security.http.ssl.key=$CERTS_DIR/es2-03/es2-03.key
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-03/es2-03.key
+    volumes:
+      - data2-03:/usr/share/elasticsearch/data
+    depends_on:
+      - es2-01
+    extends:
+        file: elastic_cluster02.yml
         service: elasticsearch
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.7.0
     environment:
       SERVER_HOST: "0.0.0.0"
-      ELASTICSEARCH_ULR: https://es01:9200
-      ELASTICSEARCH_HOSTS: https://es01:9200
+      ELASTICSEARCH_ULR: https://es1-01:9200
+      ELASTICSEARCH_HOSTS: https://es1-01:9200
       ELASTICSEARCH_USERNAME: "kibana"
       ELASTICSEARCH_PASSWORD: $KIBANA_PASSWORD
       TELEMETRY_ENABLED: "false"
@@ -76,27 +131,35 @@ services:
     ports:
       - 5601:5601
     networks:
-      - elastic
+      - elastic1
     depends_on:
-      - es01
-      - es02
-      - es03
+      - es1-01
+      - es1-02
+      - es1-03
 
   wait_until_ready:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
     command: /usr/bin/true
-    depends_on: {"es01": {"condition": "service_healthy"}}
+    depends_on: {"es1-01": {"condition": "service_healthy"}}
 
 volumes:
-  data01:
+  data1-01:
     driver: local
-  data02:
+  data1-02:
     driver: local
-  data03:
+  data1-03:
+    driver: local
+  data2-01:
+    driver: local
+  data2-02:
+    driver: local
+  data2-03:
     driver: local
   certs:
     driver: local
 
 networks:
-  elastic:
+  elastic1:
+    driver: bridge
+  elastic2:
     driver: bridge
