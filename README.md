@@ -140,7 +140,31 @@ Tudo pronto... dá pra subir os clusters. Vamos segurar o Kibana, porque ainda t
 
 Tudo rodando, maravilha. Hora de ver como funciona o cross cluster e... parece que já comecei errado. Não dá pra fazer containers em redes diferentes se falarem. Então, bora voltar todo mundo pra mesma rede.
 
-Todo mundo verdinho. Agora bora ver essa configuração de "[External Cluster](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cross-cluster-search.html)". Bem simples, foi só usar o exemplo de Remote Cluster Setup e apontar o `cluster_one` do exemplo pro es1-01 e o `cluster_two ` para o es2-01, ambos na porta 9300.
+Todo mundo verdinho. Agora bora ver essa configuração de "[External Cluster](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cross-cluster-search.html)". Bem simples, foi só usar o exemplo de Remote Cluster Setup e apontar o `cluster_one` do exemplo pro es1-01 e o `cluster_two ` para o es2-01, ambos na porta 9300. O `curl` abaixo, executado de um terminal da VM hospedeira (não de um dos containers) configura o Cross Cluster:
+
+```
+curl -X PUT --insecure --user elastic:<password> https://127.0.0.1:9200/_cluster/settings?pretty -H 'Content-Type: application/json' -d '{
+  "persistent": {
+    "cluster": {
+      "remote": {
+        "cluster_one": {
+          "seeds": [
+            "es1-01:9300"
+          ],
+          "transport.ping_schedule": "30s"
+        },
+        "cluster_two": {
+          "seeds": [
+            "es2-01:9300"
+          ],
+          "transport.compress": true,
+          "skip_unavailable": true
+        }
+      }
+    }
+  }
+}'
+```
 
 Parece ter funcionado, mas eu sei zero de fazer as queries do Elasticsearch por curl, então vou precisar do Kibana. Pensei que conseguiria subir ele desativando as opções de segurança/senha... e ele sobe, mesmo. Mas ainda pede login, e não aceita o usuário `elastic`. Vamos ter que ir atrás da persistência da keystore, mesmo...
 
