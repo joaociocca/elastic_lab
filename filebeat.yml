@@ -1,0 +1,26 @@
+filebeat.autodiscover.providers:
+  - type: docker
+    hints.enabled: true
+
+filebeat.modules:
+  - module: elasticsearch
+
+output.elasticsearch:
+  hosts: ["https://es1-01:9200"]
+  ssl.certificate_authorities: ["/etc/certs/ca/ca.crt"]
+  ssl.certificate: "/etc/certs/filebeat/filebeat.crt"
+  ssl.key: "/etc/certs/filebeat/filebeat.key"
+  username: elastic
+  password: 8xUqnPEzgPhtjxEWcWTM
+  protocol: https
+
+setup.kibana:
+  host: "https://kibana:5601"
+  ssl.certificate_authorities: ["/etc/certs/ca/ca.crt"]
+  ssl.certificate: "/etc/certs/filebeat/filebeat.crt"
+  ssl.key: "/etc/certs/filebeat/filebeat.key"
+
+setup.dashboards:
+  enabled: true
+#  retry.enabled: true
+#  retry.maximum: 3

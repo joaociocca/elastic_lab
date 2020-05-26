@@ -55,66 +55,66 @@ services:
         file: elastic_cluster01.yml
         service: elasticsearch
 
-  es2-01:
-    container_name: es2-01
-    environment:
-      - node.name=es2-01
-      - discovery.seed_hosts=es2-02,es2-03
-      - xpack.security.http.ssl.key=$CERTS_DIR/es2-01/es2-01.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-01/es2-01.key
-      # - host.port=9201
-    volumes:
-      - data2-01:/usr/share/elasticsearch/data
-    ports:
-      - 9201:9200
-    healthcheck:
-      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    extends:
-        file: elastic_cluster02.yml
-        service: elasticsearch
-  es2-02:
-    container_name: es2-02
-    environment:
-      - node.name=es2-02
-      - discovery.seed_hosts=es2-01,es2-03
-      - xpack.security.http.ssl.key=$CERTS_DIR/es2-02/es2-02.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-02/es2-02.key
-    volumes:
-      - data2-02:/usr/share/elasticsearch/data
-    depends_on:
-      - es2-01
-    extends:
-        file: elastic_cluster02.yml
-        service: elasticsearch
-  es2-03:
-    container_name: es2-03
-    environment:
-      - node.name=es2-03
-      - discovery.seed_hosts=es2-01,es2-02
-      - xpack.security.http.ssl.key=$CERTS_DIR/es2-03/es2-03.key
-      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
-      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
-      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-03/es2-03.key
-    volumes:
-      - data2-03:/usr/share/elasticsearch/data
-    depends_on:
-      - es2-01
-    extends:
-        file: elastic_cluster02.yml
-        service: elasticsearch
+#  es2-01:
+#    container_name: es2-01
+#    environment:
+#      - node.name=es2-01
+#      - discovery.seed_hosts=es2-02,es2-03
+#      - xpack.security.http.ssl.key=$CERTS_DIR/es2-01/es2-01.key
+#      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
+#      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-01/es2-01.crt
+#      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-01/es2-01.key
+#      # - host.port=9201
+#    volumes:
+#      - data2-01:/usr/share/elasticsearch/data
+#    ports:
+#      - 9201:9200
+#    healthcheck:
+#      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+#      interval: 30s
+#      timeout: 10s
+#      retries: 5
+#    extends:
+#        file: elastic_cluster02.yml
+#        service: elasticsearch
+#  es2-02:
+#    container_name: es2-02
+#    environment:
+#      - node.name=es2-02
+#      - discovery.seed_hosts=es2-01,es2-03
+#      - xpack.security.http.ssl.key=$CERTS_DIR/es2-02/es2-02.key
+#      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
+#      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-02/es2-02.crt
+#      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-02/es2-02.key
+#    volumes:
+#      - data2-02:/usr/share/elasticsearch/data
+#    depends_on:
+#      - es2-01
+#    extends:
+#        file: elastic_cluster02.yml
+#        service: elasticsearch
+#  es2-03:
+#    container_name: es2-03
+#    environment:
+#      - node.name=es2-03
+#      - discovery.seed_hosts=es2-01,es2-02
+#      - xpack.security.http.ssl.key=$CERTS_DIR/es2-03/es2-03.key
+#      - xpack.security.http.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
+#      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es2-03/es2-03.crt
+#      - xpack.security.transport.ssl.key=$CERTS_DIR/es2-03/es2-03.key
+#    volumes:
+#      - data2-03:/usr/share/elasticsearch/data
+#    depends_on:
+#      - es2-01
+#    extends:
+#        file: elastic_cluster02.yml
+#        service: elasticsearch
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.7.0
     environment:
       SERVER_HOST: "0.0.0.0"
-      ELASTICSEARCH_ULR: https://es1-01:9200
+      ELASTICSEARCH_URL: https://es1-01:9200
       ELASTICSEARCH_HOSTS: https://es1-01:9200
       # ELASTICSEARCH_USERNAME: "elastic"
       # ELASTICSEARCH_PASSWORD: $ELASTIC_PASSWORD
@@ -125,6 +125,10 @@ services:
       SERVER_SSL_ENABLED: "true"
       SERVER_SSL_KEY: $CERTS_DIR/kibana/kibana.key
       SERVER_SSL_CERTIFICATE: $CERTS_DIR/kibana/kibana.crt
+      MONITORING_ENABLED: "true"
+      # MONITORING_UI_ELASTICSEARCH_HOSTS: https://es2-01:9200
+      # MONITORING_UI_ELASTICSEARCH_USERNAME: "elastic"
+      # MONITORING_UI_ELASTICSEARCH_PASSWORD: $ELASTIC_PASSWORD2
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: $XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
       XPACK_SECURITY_ENCRYPTIONKEY: $XPACK_SECURITY_ENCRYPTIONKEY
     container_name: kibana
@@ -144,6 +148,24 @@ services:
     command: /usr/bin/true
     depends_on: {"es1-01": {"condition": "service_healthy"}}
 
+  filebeat:
+    container_name: filebeat
+    hostname: filebeat
+    image: docker.elastic.co/beats/filebeat:${ELASTIC_VERSION}
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/certs:z
+    command: filebeat -e
+    depends_on:
+      - es1-01
+      - kibana
+    restart: on-failure
+    networks:
+      - default
+
 volumes:
   data1-01:
     driver: local
@@ -151,12 +173,12 @@ volumes:
     driver: local
   data1-03:
     driver: local
-  data2-01:
-    driver: local
-  data2-02:
-    driver: local
-  data2-03:
-    driver: local
+#  data2-01:
+#    driver: local
+#  data2-02:
+#    driver: local
+#  data2-03:
+#    driver: local
   certs:
     driver: local
 

@@ -195,11 +195,38 @@ Descobri que o que eu tava fazendo de errado! Pra criar keystore e senhas (pelo 
 
 Usando o comando correto (sem reverter as configurações do TLS!), depois foi só executar (dentro do container) o `elasticsearch-setup-passwords auto` pra ter senhas dos usuários "embutidos". Daí, com um `docker cp <id>:/usr/share/elasticsearch/config/elasticsearch.keystore .` a gente faz uma cópia da keystore para persistência fora do container, mapeando de volta como `./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore` - e aqui tem outra coisa, a documentação do Docker por algum raio de motivo fala o tempo todo em "usar o path absoluto", mas comigo só funcionou quando o path local foi relativo!
 
-ATé então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos. Agora tá funcionando =D Próximo passo... matar tudo de novo e revisar todos os passos até aqui!
+Até então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos. Agora tá funcionando =D Próximo passo... matar tudo de novo e revisar todos os passos até aqui!
+
+#### Monitorando com Filebeat
+
+Aqui já começou com treta. A imagem do Elasticsearch, por padrão, joga os logs tudo pra stdout. E, um complicador pra mim, eu nunca mexi com log4j2. Então eu sai procurando pelo Google como eu ia fazer o Elasticsearch, de dentro de um container, criar essas desgraça de log em arquivo, pro Filebeat poder ler.
+
+Depois de muito não encontrar nada de útil, uma alma abençoada no Slack da Elastic conseguiu me dar uma mão. As alterações de configuração do log4j2.properties são simples: ficam no arquivo /usr/share/elasticsearch/config/log4j2.properties do container! Então é só mapear da VM pra lá, como feito com o keystore.
+
+Arquivo atualizado, mapeamento tudo certo, subi... e que coisa linda. Mas no meio do caminho tinha uma pedra. Eu fiz a VM com um HD virtual de só 10GB, e bateu. Como eu criei ele como `.vmdk`, fomos à caça e achamos rapidamente uma solução no [Pai dos Devs Burros](https://stackoverflow.com/questions/11659005/how-to-resize-a-virtualbox-vmdk-file):
+
+```
+VBoxManage clonemedium "source.vmdk" "cloned.vdi" --format vdi
+VBoxManage modifymedium "cloned.vdi" --resize 51200
+VBoxManage clonemedium "cloned.vdi" "resized.vmdk" --format vmdk
+```
+
+Achei prudente seguir a ideia de jogar ele pra um `.vdmk` novo ao invés de sobrescrever o antigo, afinal, Murphy me ama. Mas aparentemente deu tudo certo, e achei que valia a pena primeiro só subir de novo. Terminando de configurar isso, vai ser a hora de testar de novo isso daqui do zero! Ò.ó
+
+Tudo certo, tudo lindo, all green. VMDK antigo apagado, porque tem 1TB mas 10GB faz diferença sim. E mano... eu achei que já tava fácil, levei um tempo e só consegui com uma ajuda MUITO foda, do @xeraa, com [esse artigo dele](https://xeraa.net/blog/2020_filebeat-modules-with-docker-kubernetes/) e mais [uma mão lá pelo Slack da comunidade](https://elasticstack.slack.com/archives/CNL174CQ7/p1590423259003200?thread_ts=1590254701.480300&cid=CNL174CQ7)!
+
+Tá praticamente tudo no passo a passo dele, ficou de fora só a configuração de TLS e senha do filebeat, mas isso foi simples e em alguns minutos tava pronto! Um detalhe, que na documentação não fica claro (mais um) é que se você configurou TLS para o Elasticsearch e para o Kibana, você DEVE configurar os dois no `filebeat.yml`! A configuração do Elasticsearch precisa de hosts, certificados e usuário/senha, enquanto a do Kibana precisa de host e certificados.
+
+Outra coisa que eu peguei dele foi trocar o "7.7.0" por `$ELASTIC_VERSION` nas imagens!
+
+Rodando, logs do docker indo pro Elasticsearch! Bagunçado ainda, eles não ficam bonitinhos, não foram quebrados, transformados... mas isso vem depois com o Logstash! O importante é que já tem coisa aparecendo no Discover! Agora é hora de apagar tudo e revisitar pra ver se eu pulei alguma coisa na documentação.
+
+Ah, vou desabilitar o segundo cluster, por enquanto. Se mais adiante aparecer algo legal pra usar e testar isso, a gente reativa.
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
-  - Monitoração do Kibana e dos Elasticsearch com Filebeat
+  - ~~Monitoração do Kibana e dos Elasticsearch com Filebeat~~
+  - Monitoração do Kibana e dos Elasticsearch com Metricbeat
   - Logstash
   - Monitoração de endpoint com sysmon
   - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon, ou um novo..?

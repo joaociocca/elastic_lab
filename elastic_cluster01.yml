@@ -9,17 +9,21 @@ services:
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.monitoring.collection.enabled=true
-      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD 
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
       - xpack.license.self_generated.type=basic
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=true
       - xpack.security.http.ssl.verification_mode=certificate
       - xpack.security.http.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
       - xpack.security.transport.ssl.enabled=true
-      - xpack.security.transport.ssl.verification_mode=certificate 
+      - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.security.transport.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+      # - path.logs=/usr/share/elasticsearch/logs/
+      # - path.data=/usr/share/elasticsearch/data/
     volumes:
       - ./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
+#      - ./log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties
+#      - ./logs/:/usr/share/elasticsearch/logs/
       - certs:$CERTS_DIR
     ulimits:
       memlock:
@@ -27,4 +31,3 @@ services:
         hard: -1
     networks:
       - default
-
