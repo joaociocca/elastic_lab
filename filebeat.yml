@@ -11,7 +11,7 @@ output.elasticsearch:
   ssl.certificate: "/etc/certs/filebeat/filebeat.crt"
   ssl.key: "/etc/certs/filebeat/filebeat.key"
   username: elastic
-  password: 8xUqnPEzgPhtjxEWcWTM
+  password: $ELASTICSEARCH_USER_PASSWORD
   protocol: https
 
 setup.kibana:
