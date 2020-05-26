@@ -13,6 +13,38 @@ output.elasticsearch:
   username: elastic
   password: $ELASTICSEARCH_USER_PASSWORD
   protocol: https
+  pipelines:
+    - pipeline: "filebeat-%{[agent.version]}-elasticsearch-server-pipeline"
+      when:
+        and:
+          - equals:
+              container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
+          - contains:
+              message: '"type": "server"'
+    - pipeline: "filebeat-%{[agent.version]}-elasticsearch-deprecation-pipeline"
+      when:
+        and:
+          - equals:
+              container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
+          - contains:
+              message: '"type": "deprecation"'
+    - pipeline: "filebeat-%{[agent.version]}-elasticsearch-audit-pipeline"
+      when:
+        and:
+          - equals:
+              container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
+          - contains:
+              message: '"type": "audit"'
+    - pipeline: "filebeat-%{[agent.version]}-elasticsearch-slowlog-pipeline"
+      when:
+        and:
+          - equals:
+              container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
+          - contains:
+              message: '_slowlog'
+    - pipeline: "filebeat-%{[agent.version]}-elasticsearch-gc-pipeline"
+      when.equals:
+        container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
 
 setup.kibana:
   host: "https://kibana:5601"
