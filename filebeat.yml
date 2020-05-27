@@ -1,3 +1,5 @@
+#fonte: https://xeraa.net/blog/2020_filebeat-modules-with-docker-kubernetes/
+
 filebeat.autodiscover.providers:
   - type: docker
     hints.enabled: true
