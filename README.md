@@ -7,53 +7,57 @@ Um repositório pra testes com o Elastic Stack.
 Nem tinha parado pra pensar nisso inicialmente, mas é uma boa, né? Objetivos nos ajudam a guiar os trabalhos. A ideia daqui realmente começou só como um "vamos ver o que eu consigo/dá pra fazer", mas melhorias sempre são bem vindas, e acho que objetivo é uma ótima melhoria. Então, eu vou considerar como meu objetivo nesse projeto explorar tudo o que eu conseguir do Elastic Stack, usando meu notebook com 16GB de RAM e algum espaço em disco que sobrou dos jogos ;)
 
 Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e limitar algumas funcionalidades:
+
 * Elasticsearch
-  - ~~Instalando no docker~~ (feito)
-  - ~~Cluster~~ (feito)
-  - ~~Segurança~~ (feito, com persistência da keystore)
-  - ~~Cross-cluster~~ (feito)
-  - Gerenciamento de índices e ciclo de vida
-  - Elasticsearch SQL
+  * ~~Instalando no docker~~ (feito)
+  * ~~Cluster~~ (feito)
+  * ~~Segurança~~ (feito, com persistência da keystore)
+  * ~~Cross-cluster~~ (feito)
+  * Gerenciamento de índices e ciclo de vida
+  * Elasticsearch SQL
 * Kibana
-  - ~~Instalando no docker~~ (feito)
-  - ~~Segurança~~ (feito, com persistência da keystore)
-  - Discover
-  - Visualize
-  - Dashboard
-  - Canvas
-  - Maps
-  - Metrics
-  - Logs
-  - Uptime
-  - SIEM
+  * ~~Instalando no docker~~ (feito)
+  * ~~Segurança~~ (feito, com persistência da keystore)
+  * Discover
+  * Visualize
+  * Dashboard
+  * Canvas
+  * Maps
+  * Metrics
+  * Logs
+  * Uptime
+  * SIEM
 * Beats
-  - Instalando no host (e em outras VMs?)
-  - Filebeat
-  - Heartbeat
-  - Metricbeat
-  - Packetbeat
-  - Winlogbeat
+  * Instalando no host (e em outras VMs?)
+  * Filebeat
+  * Heartbeat
+  * Metricbeat
+  * Packetbeat
+  * Winlogbeat
 * Logstash
-  - Instalando no docker
-  - Segurança
-  - Ingestão de beats
-  - Transformações
-  - Múltiplos Pipelines
+  * Instalando no docker
+  * Segurança
+  * Ingestão de beats
+  * Transformações
+  * Múltiplos Pipelines
 
 ## Passo a passo
 
-#### Elasticsearch no docker
+### Elasticsearch no docker
 
-Já mexi um pouco com o Elastic Stack, já li um pouco a respeito de docker... mas nunca usei um pra ter o outro. A ideia desse projetinho começou assim: vamos ver como é subir 3 nós do Elasticsearch pelo Docker. Primeiro passo: [documentação](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html). 
+Já mexi um pouco com o Elastic Stack, já li um pouco a respeito de docker... mas nunca usei um pra ter o outro. A ideia desse projetinho começou assim: vamos ver como é subir 3 nós do Elasticsearch pelo Docker. Primeiro passo: [documentação](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html).
 
-Parece fácil, mas tem coisa fora de ordem aí. 
+Parece fácil, mas tem coisa fora de ordem aí.
 
 Subi uma VMzinha com o Ubuntu Server 20.04 e durante as telas de instalação já puxei o docker. Depois disso, `sudo apt update && sudo apt install -y docker-compose`, tudo lindo. Criei o `docker-compose.yml` como a documentação manda, só copiar e colar pra dentro. Próximo passo, `sudo docker-compose up`, certo? Errado, se fizer isso vai tomar erro na cara!
-```
+
+```log
 es02    | [1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
 ```
+
 Volta na documentação, mas [desce um pouco mais](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_set_vm_max_map_count_to_at_least_262144): `sysctl -w vm.max_map_count=262144` pra resolver. Além de incluir `vm.max_map_count=262144` no `/etc/sysctl.conf` Agora sim, só subir, que maravilha! Deu até pra testar de outra máquina na rede! `curl -X GET "<ip_da_VM_ubuntu>:9200/_cat/nodes?v&pretty"` e temos:
-```
+
+```log
 ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
 172.19.0.3           27          93  10    1.14    0.69     0.54 dilmrt    -      es02
 172.19.0.2           46          93  10    1.14    0.69     0.54 dilmrt    -      es01
@@ -62,11 +66,11 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 
 Tudo pronto com o Elastisearch, próximo passo é o Kibana!
 
-#### Kibana também não foi de primeira...
+#### Kibana também não foi de primeira
 
-Tá pensando em só seguir a [documentação](https://www.elastic.co/guide/en/kibana/current/docker.html) de novo, né? Não vai dar certo DE NOVO, porque o docker-compose da própria documentação do Elasticsearch já joga ele numa rede diferente da `default`, chamada `elastic`! Então, se você for tentar usar um `sudo docker run --link es01:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.7.0
-`, você vai receber...
-```
+Tá pensando em só seguir a [documentação](https://www.elastic.co/guide/en/kibana/current/docker.html) de novo, né? Não vai dar certo DE NOVO, porque o docker-compose da própria documentação do Elasticsearch já joga ele numa rede diferente da `default`, chamada `elastic`! Então, se você for tentar usar um `sudo docker run --link es01:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.7.0`, você vai receber...
+
+```log
 Unable to find image 'docker.elastic.co/kibana/kibana:7.7.0' locally
 7.7.0: Pulling from kibana/kibana
 86dbb57a3083: Already exists
@@ -85,15 +89,16 @@ Status: Downloaded newer image for docker.elastic.co/kibana/kibana:7.7.0
 docker: Error response from daemon: Cannot link to /es01, as it does not belong to the default network.
 ERRO[0105] error waiting for container: context canceled
 ```
+
 A solução é ou fazer outro `docker-compose.yml` ou aproveitar o do Elasticsearch. Aqui já começou a tomar forma o `docker-compose.yml` que está no repositório. Definição de nome do container, da rede, exposição de porta. Mas tem uma coisa MUITO importante desse passo: definir o volume `./kibana.yml:/usr/share/kibana/config/kibana.yml` pra poder utilizar o `kibama.yml` externo dentro do container.
 
-Pelo que eu li até aqui, também dá pra fazer isso com variável de ambiente no `docker-compose.yml`, mas eu achei que era mais interessante testar e aprender essa exposição, bem como lidar diretamente com o `kibana.yml` externamente por inteiro. 
+Pelo que eu li até aqui, também dá pra fazer isso com variável de ambiente no `docker-compose.yml`, mas eu achei que era mais interessante testar e aprender essa exposição, bem como lidar diretamente com o `kibana.yml` externamente por inteiro.
 
 E foi assim que chegamos no `kibana.yml` que está no repositório, com a configuração de `server.host` sem utilização de endereço "loopback" e definindo o `elasticsearch.hosts` para os três containers `["http://es01:9200","http://es01:9200","http://es01:9200"]`.
 
 Uma coisa que faltou foi ativar a monitoração dos nós do Elasticsearch! Isso pode ser feito incluindo a linha `- xpack.monitoring.collection.enabled=true` no conjunto `enviroment` de cada um dos containers! Já vai ser o próximo commit daqui.
 
-### Segurança achou que era PM, me deu uma surra...
+### Segurança achou que era PM, me deu uma surra
 
 Esse daqui além de dar me espancar dando muito trabalho fez eu me sentir muito burro. Passeei por uma montanha de documentação e páginas, entre elas (mas não apenas):
 
@@ -106,7 +111,7 @@ Até que eu finalmente esbarrei, totalmente sem querer, em "[começando com dock
 
 Mesmo assim, no meio do caminho teve um bug fantasma:
 
-```
+```log
 kibana              | {"type":"log","@timestamp":"2020-05-22T05:01:59Z","tags":["listening","info"],"pid":6,"message":"Server running at https://0.0.0.0:5601"}
 kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:00Z","tags":["info","http","server","Kibana"],"pid":6,"message":"http server running at https://0.0.0.0:5601"}
 kibana              | {"type":"log","@timestamp":"2020-05-22T05:02:08Z","tags":["warning","plugins","monitoring","monitoring","kibana-monitoring"],"pid":6,"message":"Error: [parse_exception] no body content for monitoring bulk request\n    at respond (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:349:15)\n    at checkRespForFailure (/usr/share/kibana/node_modules/elasticsearch/src/lib/transport.js:306:7)\n    at HttpConnector.<anonymous> (/usr/share/kibana/node_modules/elasticsearch/src/lib/connectors/http.js:173:7)\n    at IncomingMessage.wrapper (/usr/share/kibana/node_modules/elasticsearch/node_modules/lodash/lodash.js:4929:19)\n    at IncomingMessage.emit (events.js:203:15)\n    at endReadableNT (_stream_readable.js:1145:12)\n    at process._tickCallback (internal/process/next_tick.js:63:19)"}
@@ -141,9 +146,9 @@ Tudo pronto... dá pra subir os clusters. Vamos segurar o Kibana, porque ainda t
 
 Tudo rodando, maravilha. Hora de ver como funciona o cross cluster e... parece que já comecei errado. Não dá pra fazer containers em redes diferentes se falarem. Então, bora voltar todo mundo pra mesma rede.
 
-Todo mundo verdinho. Agora bora ver essa configuração de "[External Cluster](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cross-cluster-search.html)". Bem simples, foi só usar o exemplo de Remote Cluster Setup e apontar o `cluster_one` do exemplo pro es1-01 e o `cluster_two ` para o es2-01, ambos na porta 9300. O `curl` abaixo, executado de um terminal da VM hospedeira (não de um dos containers) configura o Cross Cluster:
+Todo mundo verdinho. Agora bora ver essa configuração de "[External Cluster](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cross-cluster-search.html)". Bem simples, foi só usar o exemplo de Remote Cluster Setup e apontar o `cluster_one` do exemplo pro es1-01 e o `cluster_two` para o es2-01, ambos na porta 9300. O `curl` abaixo, executado de um terminal da VM hospedeira (não de um dos containers) configura o Cross Cluster:
 
-```
+```bash
 curl -X PUT --insecure --user elastic:<password> https://127.0.0.1:9200/_cluster/settings?pretty -H 'Content-Type: application/json' -d '{
   "persistent": {
     "cluster": {
@@ -173,21 +178,21 @@ Parece ter funcionado, mas eu sei zero de fazer as queries do Elasticsearch por 
 
 Eu já tentei isso algumas vezes, mas por algum raio de motivo, o docker teima em achar que o arquivo elasticsearch.keystore é um diretório ao invés de um arquivo!
 
-A [grande documentação do Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-keystore-bind-mount) é essa: 
+A [grande documentação do Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-keystore-bind-mount) é essa:
 
-    #### Mounting an Elasticsearch keystoreedit
+  Mounting an Elasticsearch keystoreedit
 
-    By default, Elasticsearch will auto-generate a keystore file for secure settings.
-    This file is obfuscated but not encrypted. If you want to encrypt your secure 
-    settings with a password, you must use the elasticsearch-keystore utility to create
-    a password-protected keystore and bind-mount it to the container as 
-    /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the 
-    Docker container with the password at startup, set the Docker environment value 
-    KEYSTORE_PASSWORD to the value of your password. For example, a docker run command
-    might have the following options:
+  By default, Elasticsearch will auto-generate a keystore file for secure settings.
+  This file is obfuscated but not encrypted. If you want to encrypt your secure
+  settings with a password, you must use the elasticsearch-keystore utility to create
+  a password-protected keystore and bind-mount it to the container as
+  /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the
+  Docker container with the password at startup, set the Docker environment value
+  KEYSTORE_PASSWORD to the value of your password. For example, a docker run command
+  might have the following options:
 
-    -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
-    -E KEYSTORE_PASSWORD=mypassword
+  -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
+  -E KEYSTORE_PASSWORD=mypassword
 
 Bastante coisa, né? Só que não. Então, o que eu entendi é: temos que usar o próprio container pra criar a keystore e copiá-la para fora pra, só depois então, montar o volume de volta com a keystore persistente. Certo? Bom, criar a keystore, ok. Gerar as senhas dos usuários padrão... não funciona porque o TLS tá ligado?
 
@@ -205,7 +210,7 @@ Depois de muito não encontrar nada de útil, uma alma abençoada no Slack da El
 
 Arquivo atualizado, mapeamento tudo certo, subi... e que coisa linda. Mas no meio do caminho tinha uma pedra. Eu fiz a VM com um HD virtual de só 10GB, e bateu. Como eu criei ele como `.vmdk`, fomos à caça e achamos rapidamente uma solução no [Pai dos Devs Burros](https://stackoverflow.com/questions/11659005/how-to-resize-a-virtualbox-vmdk-file):
 
-```
+```bash
 VBoxManage clonemedium "source.vmdk" "cloned.vdi" --format vdi
 VBoxManage modifymedium "cloned.vdi" --resize 51200
 VBoxManage clonemedium "cloned.vdi" "resized.vmdk" --format vmdk
@@ -213,7 +218,7 @@ VBoxManage clonemedium "cloned.vdi" "resized.vmdk" --format vmdk
 
 Achei prudente seguir a ideia de jogar ele pra um `.vdmk` novo ao invés de sobrescrever o antigo, afinal, Murphy me ama. Mas aparentemente deu tudo certo, e achei que valia a pena primeiro só subir de novo. Terminando de configurar isso, vai ser a hora de testar de novo isso daqui do zero! Ò.ó
 
-Tudo certo, tudo lindo, all green. VMDK antigo apagado, porque tem 1TB mas 10GB faz diferença sim. E mano... eu achei que já tava fácil, levei um tempo e só consegui com uma ajuda MUITO foda, do @xeraa, com [esse artigo dele](https://xeraa.net/blog/2020_filebeat-modules-with-docker-kubernetes/) e mais [uma mão lá pelo Slack da comunidade](https://elasticstack.slack.com/archives/CNL174CQ7/p1590423259003200?thread_ts=1590254701.480300&cid=CNL174CQ7)!
+Tudo certo, tudo lindo, all green. VMDK antigo apagado, porque tem 1TB mas 10GB faz diferença sim. E mano... eu achei que já tava fácil, levei um tempo e só consegui com uma ajuda MUITO foda, do @xeraa, com [esse artigo dele](https://xeraa.net/blog/2020_filebeat-modules-with-docker-kubernetes/) e mais [uma mão lá pelo Slack da comunidade](https://elasticstack.slack.com/archives/CNL174CQ7/p1590423259003200?thread_ts=1590254701.480300&cid=CNL174CQ7)! (Uma atualização, depois que escrevi esse daqui, é que ficou faltando implementar a configuração de pipelines, do Plano B do artigo do Phillip!)
 
 Tá praticamente tudo no passo a passo dele, ficou de fora só a configuração de TLS e senha do filebeat, mas isso foi simples e em alguns minutos tava pronto! Um detalhe, que na documentação não fica claro (mais um) é que se você configurou TLS para o Elasticsearch e para o Kibana, você DEVE configurar os dois no `filebeat.yml`! A configuração do Elasticsearch precisa de hosts, certificados e usuário/senha, enquanto a do Kibana precisa de host e certificados.
 
@@ -221,16 +226,18 @@ Outra coisa que eu peguei dele foi trocar o "7.7.0" por `$ELASTIC_VERSION` nas i
 
 Rodando, logs do docker indo pro Elasticsearch! Bagunçado ainda, eles não ficam bonitinhos, não foram quebrados, transformados... mas isso vem depois com o Logstash! O importante é que já tem coisa aparecendo no Discover! Agora é hora de apagar tudo e revisitar pra ver se eu pulei alguma coisa na documentação.
 
-Ah, vou desabilitar o segundo cluster, por enquanto. Se mais adiante aparecer algo legal pra usar e testar isso, a gente reativa.
+~~Ah, vou desabilitar o segundo cluster, por enquanto. Se mais adiante aparecer algo legal pra usar e testar isso, a gente reativa.~~ Eu ia desativar o segundo cluster, quando me bateu uma coisa: o Docker foi feito pra lidar com containers, então deve ter uma maneira mais inteligente de ter os 3 containers com diferentes nós do Elasticsearch, né?
 
 ### Próximos passos
+
 (não está em ordem, preferência ou prioridade)
-  - ~~Monitoração do Kibana e dos Elasticsearch com Filebeat~~
-  - Monitoração do Kibana e dos Elasticsearch com Metricbeat
-  - Logstash
-  - Monitoração de endpoint com sysmon
-  - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon, ou um novo..?
-  - ~~Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim~~
-  - Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
-    * apenas Linux e Windows? Será possível incluir MacOS?
-  - Transformar esse readme em uma wiki?
+
+* ~~Monitoração do Kibana e dos Elasticsearch com Filebeat~~
+* Monitoração do Kibana e dos Elasticsearch com Metricbeat
+* Logstash
+* Monitoração de endpoint com sysmon
+* Usar meu [próprio script](https://github.com/joaociocca/Graylog_Sysmon), ou um novo..?
+* ~~Cross-cluster, subir mais 3 instâncias de Elasticsearch com configuração de cluster diferente pra testar se funciona assim~~
+* Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
+  * apenas Linux e Windows? Será possível incluir MacOS?
+* Transformar esse readme em uma wiki?

@@ -22,6 +22,7 @@ services:
     extends:
         file: elastic_cluster01.yml
         service: elasticsearch
+
   es1-02:
     container_name: es1-02
     environment:
@@ -38,6 +39,7 @@ services:
     extends:
         file: elastic_cluster01.yml
         service: elasticsearch
+        
   es1-03:
     container_name: es1-03
     environment:
@@ -116,8 +118,6 @@ services:
       SERVER_HOST: "0.0.0.0"
       ELASTICSEARCH_URL: https://es1-01:9200
       ELASTICSEARCH_HOSTS: https://es1-01:9200
-      # ELASTICSEARCH_USERNAME: "elastic"
-      # ELASTICSEARCH_PASSWORD: $ELASTIC_PASSWORD
       ELASTICSEARCH_USERNAME: "kibana"
       ELASTICSEARCH_PASSWORD: $KIBANA_PASSWORD
       TELEMETRY_ENABLED: "false"
@@ -126,9 +126,6 @@ services:
       SERVER_SSL_KEY: $CERTS_DIR/kibana/kibana.key
       SERVER_SSL_CERTIFICATE: $CERTS_DIR/kibana/kibana.crt
       MONITORING_ENABLED: "true"
-      # MONITORING_UI_ELASTICSEARCH_HOSTS: https://es2-01:9200
-      # MONITORING_UI_ELASTICSEARCH_USERNAME: "elastic"
-      # MONITORING_UI_ELASTICSEARCH_PASSWORD: $ELASTIC_PASSWORD2
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: $XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
       XPACK_SECURITY_ENCRYPTIONKEY: $XPACK_SECURITY_ENCRYPTIONKEY
     container_name: kibana
