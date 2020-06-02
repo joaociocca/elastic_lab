@@ -20,26 +20,26 @@ instances:
     ip:
       - 127.0.0.1
 
-  - name: es2-01
-    dns:
-      - es2-01
-      - localhost
-    ip:
-      - 127.0.0.1
+  # - name: es2-01
+  #   dns:
+  #     - es2-01
+  #     - localhost
+  #   ip:
+  #     - 127.0.0.1
 
-  - name: es2-02
-    dns:
-      - es2-02
-      - localhost
-    ip:
-      - 127.0.0.1
+  # - name: es2-02
+  #   dns:
+  #     - es2-02
+  #     - localhost
+  #   ip:
+  #     - 127.0.0.1
 
-  - name: es2-03
-    dns:
-      - es2-03
-      - localhost
-    ip:
-      - 127.0.0.1
+  # - name: es2-03
+  #   dns:
+  #     - es2-03
+  #     - localhost
+  #   ip:
+  #     - 127.0.0.1
 
   - name: kibana
     dns:
