@@ -44,7 +44,7 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
 
 ### Se você chegou agora...
 
-Pode ser mais interessante pular lá pra baixo, em "Reiniciando, vamos do zero..."
+Pode ser mais interessante pular lá pra baixo, em "[Reiniciando, vamos do zero.](#reiniciando-vamos-do-zero)"
 
 Mas se quiser dar uma lida no que rolou desde o início, fique à vontade ;)
 
