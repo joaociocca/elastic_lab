@@ -1,3 +1,5 @@
+strict.perms: false
+
 filebeat.autodiscover.providers:
   - type: docker
     hints.enabled: true
@@ -7,11 +9,12 @@ filebeat.modules:
 
 output.elasticsearch:
   hosts: ["https://es1-01:9200"]
-  ssl.certificate_authorities: ["/etc/certs/ca/ca.crt"]
-  ssl.certificate: "/etc/certs/filebeat/filebeat.crt"
-  ssl.key: "/etc/certs/filebeat/filebeat.key"
-  username: elastic
-  password: $ELASTICSEARCH_USER_PASSWORD
+  ssl:
+    certificate_authorities: ["/etc/certs/ca/ca.crt"]
+    certificate: "/etc/certs/filebeat/filebeat.crt"
+    key: "/etc/certs/filebeat/filebeat.key"
+  username: beats_writer
+  password: HUVRzzDoxb7MTlvq5TQpzNuMMu1rHZGxABLqEb+vEG
   protocol: https
   pipelines:
     - pipeline: "filebeat-%{[agent.version]}-elasticsearch-server-pipeline"
@@ -46,13 +49,17 @@ output.elasticsearch:
       when.equals:
         container.labels.org_label-schema_url: "https://www.elastic.co/products/elasticsearch"
 
-setup.kibana:
-  host: "https://kibana:5601"
-  ssl.certificate_authorities: ["/etc/certs/ca/ca.crt"]
-  ssl.certificate: "/etc/certs/filebeat/filebeat.crt"
-  ssl.key: "/etc/certs/filebeat/filebeat.key"
+setup:
+  kibana:
+    host: "https://kibana:5601"
+    ssl:
+      certificate_authorities: ["/etc/certs/ca/ca.crt"]
+      certificate: "/etc/certs/filebeat/filebeat.crt"
+      key: "/etc/certs/filebeat/filebeat.key"
 
-setup.dashboards:
-  enabled: true
+  ilm.check_exists: false
+
+  # dashboards:
+  #   enabled: true
 #  retry.enabled: true
 #  retry.maximum: 3

@@ -27,10 +27,10 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
   - Uptime
   - SIEM
 * Beats
-  - Instalando no host (e em outras VMs?)
-  - Filebeat
+  - ~~Instalando no host (e em outras VMs?)~~
+  - ~~Filebeat~~
   - Heartbeat
-  - Metricbeat
+  - ~~Metricbeat~~
   - Packetbeat
   - Winlogbeat
 * Logstash
@@ -42,13 +42,19 @@ Mas tem MUITA coisa no Elastic Stack, então eu vou olhar pros 4 principais e li
 
 ## Passo a passo
 
+### Se você chegou agora...
+
+Pode ser mais interessante pular lá pra baixo, em "Reiniciando, vamos do zero..."
+
+Mas se quiser dar uma lida no que rolou desde o início, fique à vontade ;)
+
 #### Elasticsearch no docker
 
 Já mexi um pouco com o Elastic Stack, já li um pouco a respeito de docker... mas nunca usei um pra ter o outro. A ideia desse projetinho começou assim: vamos ver como é subir 3 nós do Elasticsearch pelo Docker. Primeiro passo: [documentação](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html). 
 
 Parece fácil, mas tem coisa fora de ordem aí. 
 
-Subi uma VMzinha com o Ubuntu Server 20.04 e durante as telas de instalação já puxei o docker. Depois disso, `sudo apt update && sudo apt install -y docker-compose`, tudo lindo. Criei o `docker-compose.yml` como a documentação manda, só copiar e colar pra dentro. Próximo passo, `sudo docker-compose up`, certo? Errado, se fizer isso vai tomar erro na cara!
+Subi uma VMzinha com o Ubuntu Server 20.04 e durante as telas de instalação já puxei o docker. Depois disso, `sudo apt update && sudo apt install -y docker-compose`, tudo lindo. Criei o `docker-compose.yml` como a documentação manda, só copiar e colar pra dentro. Próximo passo, `docker-compose up`, certo? Errado, se fizer isso vai tomar erro na cara!
 ```
 es02    | [1]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
 ```
@@ -64,7 +70,7 @@ Tudo pronto com o Elastisearch, próximo passo é o Kibana!
 
 #### Kibana também não foi de primeira...
 
-Tá pensando em só seguir a [documentação](https://www.elastic.co/guide/en/kibana/current/docker.html) de novo, né? Não vai dar certo DE NOVO, porque o docker-compose da própria documentação do Elasticsearch já joga ele numa rede diferente da `default`, chamada `elastic`! Então, se você for tentar usar um `sudo docker run --link es01:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.7.0
+Tá pensando em só seguir a [documentação](https://www.elastic.co/guide/en/kibana/current/docker.html) de novo, né? Não vai dar certo DE NOVO, porque o docker-compose da própria documentação do Elasticsearch já joga ele numa rede diferente da `default`, chamada `elastic`! Então, se você for tentar usar um `docker run --link es01:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.7.0
 `, você vai receber...
 ```
 Unable to find image 'docker.elastic.co/kibana/kibana:7.7.0' locally
@@ -169,35 +175,7 @@ curl -X PUT --insecure --user elastic:<password> https://127.0.0.1:9200/_cluster
 
 Parece ter funcionado, mas eu sei zero de fazer as queries do Elasticsearch por curl, então vou precisar do Kibana. Pensei que conseguiria subir ele desativando as opções de segurança/senha... e ele sobe, mesmo. Mas ainda pede login, e não aceita o usuário `elastic`. Vamos ter que ir atrás da persistência da keystore, mesmo...
 
-### Persistência da keystore
-
-Eu já tentei isso algumas vezes, mas por algum raio de motivo, o docker teima em achar que o arquivo elasticsearch.keystore é um diretório ao invés de um arquivo!
-
-A [grande documentação do Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-keystore-bind-mount) é essa: 
-
-    #### Mounting an Elasticsearch keystoreedit
-
-    By default, Elasticsearch will auto-generate a keystore file for secure settings.
-    This file is obfuscated but not encrypted. If you want to encrypt your secure 
-    settings with a password, you must use the elasticsearch-keystore utility to create
-    a password-protected keystore and bind-mount it to the container as 
-    /usr/share/elasticsearch/config/elasticsearch.keystore. In order to provide the 
-    Docker container with the password at startup, set the Docker environment value 
-    KEYSTORE_PASSWORD to the value of your password. For example, a docker run command
-    might have the following options:
-
-    -v full_path_to/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
-    -E KEYSTORE_PASSWORD=mypassword
-
-Bastante coisa, né? Só que não. Então, o que eu entendi é: temos que usar o próprio container pra criar a keystore e copiá-la para fora pra, só depois então, montar o volume de volta com a keystore persistente. Certo? Bom, criar a keystore, ok. Gerar as senhas dos usuários padrão... não funciona porque o TLS tá ligado?
-
-Descobri que o que eu tava fazendo de errado! Pra criar keystore e senhas (pelo `bin/elasticsearch-setup-passwords auto`) eu tentava executar um `docker-compose run es1-01 /bin/bash` ao invés de `docker exec -it <id> /bin/bash`, o que acabava fazendo eu ir parar numa OUTRA máquina e não conseguir acessar o keystore "real" do cluster!
-
-Usando o comando correto (sem reverter as configurações do TLS!), depois foi só executar (dentro do container) o `elasticsearch-setup-passwords auto` pra ter senhas dos usuários "embutidos". Daí, com um `docker cp <id>:/usr/share/elasticsearch/config/elasticsearch.keystore .` a gente faz uma cópia da keystore para persistência fora do container, mapeando de volta como `./elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore` - e aqui tem outra coisa, a documentação do Docker por algum raio de motivo fala o tempo todo em "usar o path absoluto", mas comigo só funcionou quando o path local foi relativo!
-
-Até então eu estava brigando pra conseguir a desgraça dessa persistência nos dados de todos. Agora tá funcionando =D Próximo passo... matar tudo de novo e revisar todos os passos até aqui!
-
-#### Monitorando com Filebeat
+### Monitorando com Filebeat
 
 Aqui já começou com treta. A imagem do Elasticsearch, por padrão, joga os logs tudo pra stdout. E, um complicador pra mim, eu nunca mexi com log4j2. Então eu sai procurando pelo Google como eu ia fazer o Elasticsearch, de dentro de um container, criar essas desgraça de log em arquivo, pro Filebeat poder ler.
 
@@ -217,16 +195,181 @@ Tudo certo, tudo lindo, all green. VMDK antigo apagado, porque tem 1TB mas 10GB 
 
 Tá praticamente tudo no passo a passo dele, ficou de fora só a configuração de TLS e senha do filebeat, mas isso foi simples e em alguns minutos tava pronto! Um detalhe, que na documentação não fica claro (mais um) é que se você configurou TLS para o Elasticsearch e para o Kibana, você DEVE configurar os dois no `filebeat.yml`! A configuração do Elasticsearch precisa de hosts, certificados e usuário/senha, enquanto a do Kibana precisa de host e certificados.
 
+Mais um lembrete aqui: o arquivo `filebeat.yml` [precisa ser do root ou do usuário que executa o filebeat](https://www.elastic.co/guide/en/beats/libbeat/current/config-file-permissions.html), com permissão 0644.
+
 Outra coisa que eu peguei dele foi trocar o "7.7.0" por `$ELASTIC_VERSION` nas imagens!
 
-Rodando, logs do docker indo pro Elasticsearch! Bagunçado ainda, eles não ficam bonitinhos, não foram quebrados, transformados... mas isso vem depois com o Logstash! O importante é que já tem coisa aparecendo no Discover! Agora é hora de apagar tudo e revisitar pra ver se eu pulei alguma coisa na documentação.
-
 Ah, vou desabilitar o segundo cluster, por enquanto. Se mais adiante aparecer algo legal pra usar e testar isso, a gente reativa.
+
+### Reiniciando, vamos do zero.
+
+`docker container prune -f; docker volume prune -f; docker network prune -f`, vamos deixar as imagens ali de boa pra não ter que baixar tudo de novo.
+
+Primeira coisa, que o preguiçoso que não lê tudo não sabia - tem umas configurações do Docker pra fazer pra não precisar ficar no `sudo docker`, então [vai lá](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user) e faz.
+
+#### Certificados e senhas
+
+Abre o terminal e manda ver na criação dos certificados com o `docker-compose -f create-certs.yml run --rm create_certs`, pra começar bem a coisa!
+
+Rolou umas cagadas no meio do caminho, mas a gente limpa pra deixar o importante: `docker run -ti -v elastic_lab_data1-01:/usr/share/elasticsearch/data --network=elastic_lab_elastic --env discovery.type=single-node --env-file .env --name=iniciar --rm "docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}" /bin/bash` pra iniciar um container com a imagem que a gente quer usar. Nós vamos usar esse container pra criar as senhas de sistema. 
+
+Primeiro a gente precisa ajeitar as configurações com `printf "discovery.type: single-node\nxpack.security.enabled: true" >> config/elasticsearch.yml`, e depois iniciar o Elasticsearch no fundo com `runuser -l elasticsearch -c '/usr/share/elasticsearch/bin/elasticsearch' &`. A hora que ele acalmar nos logs (vai ter uma linha sobre `Active license is now [BASIC]; Security is enabled`), a gente consegue gerar as senhas com `echo "y" | runuser -l elasticsearch -c 'bin/elasticsearch-setup-passwords auto' | grep "PASSWORD" | cut -d ' ' -f 2,4 > senhas.txt`.
+
+Esse último comando vai fazer o Elasticsearch rodando ao fundo cuspir umas 3 linhas de log, e depois você vai ter 6 linhas com usuários e senhas, pra você salvar isso daí tudo num arquivo qualquer num canto. Duas senhas mais importantes nesse momento: kibana (vai lá pro arquivo `.env` no `KIBANA_PASSWORD`) e elastic, que é o superusuário da porra toda. Terminou? Ainda não, vamos aproveitar o container pra criar os papéis e usuários pros beats!
+
+#### Preparando pros beats...
+
+Primeiro, vamos gerar senhas pros usuários `beats_setup` e `beats_writer`, além de jogar tudo pra variáveis. Inclui uns prints porque elas serão necessárias fora desse container temporário! Salva elas num `.senhas` ou no próprio `.env`.
+
+```bash
+#gera senhas e exporta pra variáveis
+printf "beats_setup $(cat /dev/urandom | base64 | head -c 42)\nbeats_writer $(cat /dev/urandom | base64 | head -c 42)\n" >> senhas.txt
+cat senhas.txt | grep "elastic" && cat senhas.txt | grep "kibana" && cat senhas.txt | grep "beats_setup" && cat senhas.txt | grep "beats_writer"
+export ELASTIC_PASSWORD="$(cat senhas.txt | grep "elastic" | cut -d ' ' -f 2)"
+export KIBANA_PASSWORD="$(cat senhas.txt | grep "kibana" | cut -d ' ' -f 2)"
+export BEATSSETUP_PASSWORD="$(cat senhas.txt | grep "beats_setup" | cut -d ' ' -f 2)"
+export BEATSWRITER_PASSWORD="$(cat senhas.txt | grep "beats_writer" | cut -d ' ' -f 2)"
+
+#cria os papéis de beats_setup e beats_writer
+curl -X POST "localhost:9200/_security/role/beats_setup?pretty" -u elastic:${ELASTIC_PASSWORD} -k -H 'Content-Type: application/json' -d'{
+    "cluster" : [
+      "monitor",
+      "manage_ilm",
+      "manage_ml",
+      "manage_index_templates",
+      "manage_ingest_pipelines",
+      "manage_pipeline"
+    ],
+    "indices" : [
+      {
+        "names" : [
+          "filebeat-*",
+          "auditbeat-*",
+          "heartbeat-*",
+          "metricbeat-*",
+          "packetbeat-*",
+          "winlogbeat-*",
+          "metricbeat*"
+        ],
+        "privileges" : [
+          "read"
+        ],
+        "allow_restricted_indices" : false
+      },
+      {
+        "names" : [
+          "*"
+        ],
+        "privileges" : [
+          "manage"
+        ],
+        "field_security" : {
+          "grant" : [
+            "*"
+          ]
+        },
+        "allow_restricted_indices" : false
+      }
+    ],
+    "applications" : [ ],
+    "run_as" : [ ],
+    "metadata" : { },
+    "transient_metadata" : {
+      "enabled" : true
+    }
+  }'
+
+curl -X POST "localhost:9200/_security/role/beats_writer?pretty" -u elastic:${ELASTIC_PASSWORD} -k -H 'Content-Type: application/json' -d'{
+    "cluster" : [
+      "monitor",
+      "read_ilm",
+      "cluster:admin/ingest/pipeline/get",
+      "cluster:admin/ingest/pipeline/put",
+      "cluster:admin/ilm/put"
+    ],
+    "indices" : [
+      {
+        "names" : [
+          "auditbeat-*",
+          "filebeat-*",
+          "heartbeat-*",
+          "metricbeat-*",
+          "packetbeat-*",
+          "winlogbeat-*"
+        ],
+        "privileges" : [
+          "create_doc",
+          "create_index",
+          "view_index_metadata"
+        ],
+        "allow_restricted_indices" : false
+      }
+    ],
+    "applications" : [ ],
+    "run_as" : [ ],
+    "metadata" : { },
+    "transient_metadata" : {
+      "enabled" : true
+    }
+  }'
+
+#cria os usuários beats_setup e beats_writer
+curl -X POST "localhost:9200/_security/user/beats_setup?pretty" -u elastic:${ELASTIC_PASSWORD} -k -H 'Content-Type: application/json' -d'{"password":"'$BEATSSETUP_PASSWORD'","roles":["beats_setup","kibana_admin","ingest_admin","beats_admin"],"full_name":"","email":"","metadata":{},"enabled":true}}'
+
+curl -X POST "localhost:9200/_security/user/beats_writer?pretty" -u elastic:${ELASTIC_PASSWORD} -k -H 'Content-Type: application/json' -d'{"password":"'$BEATSWRITER_PASSWORD'","roles":["beats_writer"],"full_name":"","email":"","metadata":{},"enabled":true}}'
+```
+
+Agora sim, já podemos matar o container com \[CTRL+D\]. 
+
+Os papéis, usuários e senhas são salvos no índice `.security-*` do Elasticsearch, então por isso a gente precisa iniciar esse container temporário mapeando o volume do data1-01. Se não, ao matar o container, elas se perdem. 
+
+Hora de ver se tudo funcionou: `docker-compose up -d es1-01 es1-02 es1-03 kibana`. Em mais ou menos 1 minuto, os 3 nós do Elasticsearch já terminaram de subir, assim como o Kibana. 
+
+Você consegue acessar a interface do Kibana pelo IP da VM que roda o Docker (apesar de que, aí depende de como você configurou a rede da sua VM), na porta 5601, e se autentica utilizando o usuário `elastic` e a senha que a gente gerou ali em cima com o `elasticsearch-setup-passwords`.
+
+Não refiz a keystore com persistência porque, pelo menos por agora, mas eu acho que ela será necessária pra facilitar guardar a senha dos beats porque ele não expoem a configuração pro `docker-compose.yml` como o Elasticsearch e o Kibana fazem, e também não aceita variável do `.env` nos próprios arquivos de configuração `*beat.yml`. O que a gente precisa que fique persistente, no momento, são os índices do Elasticsearch. Também removi a parte que falava disso das instruções anteriores.
+
+#### *beats!!
+
+Então, para termos eles rodando direito, antes do agente coletor a gente precisa configurar o indice e os dashboards. As próprias ferramentas fazem isso, e dá pra fazer usando containers temporários, que nem fizemos com o Elasticsearch! Se você salvou as senhas expostas ali em cima no seu `.env`, é só usar o export abaixo e copiar e colar os comandos. Se não, ajusta aí.
+
+```bash
+## exporta senha do BEATSSETUP_PASSWORD 
+export BEATSSETUP_PASSWORD="$(cat .env | grep "BEATSSETUP" | cut -d '=' -f 2)"
+
+## executa o setup do metricbeat
+docker run --rm \
+--network=elastic_lab_elastic \
+docker.elastic.co/beats/metricbeat:7.7.1 setup \
+-E setup.kibana.host=https://kibana:5601 \
+-E setup.kibana.ssl.verification_mode=none \
+-E setup.ilm.overwrite=true \
+-E output.elasticsearch.hosts=["https://es1-01:9200"] \
+-E output.elasticsearch.ssl.verification_mode=none \
+-E output.elasticsearch.username=beats_setup \
+-E output.elasticsearch.password=$BEATSSETUP_PASSWORD
+
+## executa o setup do filebeat 
+docker run --rm \
+--network=elastic_lab_elastic \
+docker.elastic.co/beats/filebeat:7.7.1 setup \
+-E setup.kibana.host=https://kibana:5601 \
+-E setup.kibana.ssl.verification_mode=none \
+-E setup.ilm.overwrite=true \
+-E output.elasticsearch.hosts=["https://es1-01:9200"] \
+-E output.elasticsearch.ssl.verification_mode=none \
+-E output.elasticsearch.username=beats_setup \
+-E output.elasticsearch.password=$BEATSSETUP_PASSWORD
+```
+
+Achou que agora era correr pro abraço? Não, você ainda tem que jogar a senha do beats_writer, criada ali nos cURLs, dentro dos arquivos `*beat.yml`. Feito isso, aí sim você pode correr pro abraço e mandar um `docker-compose up -d --no-deps metricbeat filebeat`, e ver o seu dashboard "[Metricbeat Docker] Overview ECS" ficar lindo, mostrando o status dos seus 6 containers!
+
+Acho que o próximo passo pode, finalmente, ser a monitoração do endpoint com o Sysmon ;) e deixamos o Logstash pra depois
 
 ### Próximos passos
 (não está em ordem, preferência ou prioridade)
   - ~~Monitoração do Kibana e dos Elasticsearch com Filebeat~~
-  - Monitoração do Kibana e dos Elasticsearch com Metricbeat
+  - ~~Monitoração do Kibana e dos Elasticsearch com Metricbeat~~
   - Logstash
   - Monitoração de endpoint com sysmon
   - Usar meu próprio script, do https://github.com/joaociocca/Graylog_Sysmon, ou um novo..?
