@@ -377,3 +377,4 @@ Acho que o próximo passo pode, finalmente, ser a monitoração do endpoint com 
   - Criar máquinas vulneráveis no Docker, pra monitorar pelo Elastic Stack
     * apenas Linux e Windows? Será possível incluir MacOS?
   - Transformar esse readme em uma wiki?
+  - Usar o [DumpsterFire](https://github.com/TryCatchHCF/DumpsterFire) pra gerar eventos a serem visualizados..?
