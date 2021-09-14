@@ -1,4 +1,2 @@
-.env
-.senhas
-elasticsearch.keystore
 .vscode/*
+elastic_lab.code-workspace
